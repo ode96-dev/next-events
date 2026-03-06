@@ -110,7 +110,8 @@ const EventSchema = new Schema<IEvent>(
 );
 
 // Pre-save hook for slug generation and data normalization
-EventSchema.pre('save', function (next) {
+// Optimized Pre-save hook using async/await (no 'next' needed)
+EventSchema.pre('save', async function () {
   const event = this as IEvent;
 
   // Generate slug only if title changed or document is new
@@ -118,17 +119,23 @@ EventSchema.pre('save', function (next) {
     event.slug = generateSlug(event.title);
   }
 
-  // Normalize date to ISO format if it's not already
+  // Normalize date
   if (event.isModified('date')) {
-    event.date = normalizeDate(event.date);
+    try {
+      event.date = normalizeDate(event.date);
+    } catch {
+      throw new Error('Invalid date format provided');
+    }
   }
 
-  // Normalize time format (HH:MM)
+  // Normalize time
   if (event.isModified('time')) {
-    event.time = normalizeTime(event.time);
+    try {
+      event.time = normalizeTime(event.time);
+    } catch {
+      throw new Error('Invalid time format. Use HH:MM or HH:MM AM/PM');
+    }
   }
-
-  next();
 });
 
 // Helper function to generate URL-friendly slug
